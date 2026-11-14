@@ -31,6 +31,15 @@ public class GlobalExceptionHandler {
     ResponseEntity<Erro> conflict(Exception ex) {
         return response(HttpStatus.CONFLICT, "Operação em conflito com os dados existentes ou com outra atualização.", List.of());
     }
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    ResponseEntity<Erro> uploadGrande(Exception ex) {
+        return response(HttpStatus.PAYLOAD_TOO_LARGE, "A foto deve ter no maximo 5 MB.", List.of());
+    }
+    @ExceptionHandler({org.springframework.web.multipart.support.MissingServletRequestPartException.class,
+            org.springframework.web.multipart.MultipartException.class})
+    ResponseEntity<Erro> multipart(Exception ex) {
+        return response(HttpStatus.BAD_REQUEST, "Envie a foto no campo multipart foto.", List.of());
+    }
     private ResponseEntity<Erro> response(HttpStatus status, String message, List<String> details) {
         return ResponseEntity.status(status).body(new Erro(status.value(), message, details));
     }

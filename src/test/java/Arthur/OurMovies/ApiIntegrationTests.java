@@ -47,6 +47,13 @@ class ApiIntegrationTests {
                 .content(avaliacao(item.filmeId(), 1, "8"))).andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         long id = ((Number) JsonPath.read(resposta, "$.id")).longValue();
+        mvc.perform(patch("/api/usuarios/1").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"nome\":\"Nome atualizado\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(1));
+        mvc.perform(get("/api/avaliacoes/filme/{id}", item.filmeId()))
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.avaliacoes[0].id").value(id))
+                .andExpect(jsonPath("$.avaliacoes[0].usuario.nome").value("Nome atualizado"));
         mvc.perform(post("/api/avaliacoes").contentType(MediaType.APPLICATION_JSON)
                 .content(avaliacao(item.filmeId(), 2, "9.5"))).andExpect(status().isCreated());
         mvc.perform(get("/api/avaliacoes/filme/{id}", item.filmeId()))

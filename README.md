@@ -32,7 +32,7 @@ O backend fica em `http://localhost:8080`. CORS permite `http://localhost:5173`.
 Variáveis são lidas do ambiente do processo; um arquivo `.env` não é carregado automaticamente. Não salve credenciais no repositório.
 Sem `TMDB_API_KEY`, o banco e os endpoints locais continuam disponíveis, mas consultas externas retornam 502.
 
-`schema.sql` cria as tabelas, índices e restrições se ainda não existirem; o Hibernate valida o esquema (`ddl-auto=validate`). O script não apaga dados. Para futuras alterações de esquema, adote migrações versionadas; `CREATE TABLE IF NOT EXISTS` não atualiza tabelas existentes.
+`schema.sql` cria as tabelas, índices e restrições se ainda não existirem; o Hibernate valida o esquema (`ddl-auto=validate`). O script adiciona `usuarios.foto_perfil` com `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, inclusive em bancos existentes, sem apagar dados ou alterar IDs e avaliações. Para futuras alterações de esquema, adote migrações versionadas; `CREATE TABLE IF NOT EXISTS` não atualiza tabelas existentes.
 Na primeira inicialização, são criados os usuários de IDs 1 e 2. Os nomes vêm das variáveis acima (padrões: `Usuario 1` e `Usuario 2`). Reiniciar preserva nomes existentes; essas variáveis não renomeiam usuários já cadastrados.
 
 ## Estrutura
@@ -61,6 +61,10 @@ Na primeira inicialização, são criados os usuários de IDs 1 e 2. Os nomes v�
 | PUT | `/api/avaliacoes/{id}` | Substitui nota e comentário |
 | DELETE | `/api/avaliacoes/{id}` | Remove avaliação (204) |
 | GET | `/api/usuarios` | Dois usuários disponíveis |
+| PATCH | `/api/usuarios/{id}` | Atualiza o nome (200) |
+| POST | `/api/usuarios/{id}/foto` | Envia ou substitui foto via multipart (200) |
+| GET | `/api/usuarios/{id}/foto` | Bytes da foto ou imagem padrão (200) |
+| DELETE | `/api/usuarios/{id}/foto` | Remove foto (204) |
 
 `tmdbId` é o identificador externo. `filmeId` é o `filme.id` retornado na lista; `id` nas rotas da lista é o identificador do item da lista. Os três não são intercambiáveis. Nos resultados TMDB, o `id` local é `null`.
 
@@ -77,6 +81,41 @@ Notas aceitam de 0 a 10, com até uma casa decimal. Comentários são opcionais,
 Excluir da lista remove as avaliações, mas mantém o catálogo local do filme. Adicioná-lo novamente reutiliza os dados locais e começa sem notas. Filmes e avaliações duplicados retornam 409. Recursos ausentes retornam 404; dados inválidos, 400. Falhas de rede, autenticação, limite de requisições ou respostas inválidas da TMDB retornam 502; filme inexistente na TMDB retorna 404. Timeouts: conexão 5s, leitura 10s.
 
 Sem autenticação, as rotas não verificam a identidade de quem altera avaliações. Isso deverá ser tratado quando a autenticação for implementada.
+
+## Personalização de usuários
+
+O PATCH de usuário recebe `{"nome":"Arthur"}`. O nome é obrigatório, não pode ser nulo ou conter apenas espaços e tem no máximo 100 caracteres antes de remover espaços das extremidades. Campos omitidos ou nulos neste endpoint retornam 400.
+
+PATCH de usuário e POST de foto retornam o mesmo DTO da listagem:
+
+```json
+{"id":1,"nome":"Arthur","fotoUrl":"/api/usuarios/1/foto"}
+```
+
+O DTO de usuário nas avaliações também inclui `fotoUrl`. O endereço é relativo à origem do backend e permanece disponível quando não há foto. GET de foto retorna bytes com `Content-Type` correspondente (`image/jpeg`, `image/png` ou `image/webp`); sem foto ou se o arquivo estiver ausente, retorna a imagem padrão SVG incluída na aplicação (`image/svg+xml`). A resposta usa `Cache-Control: no-store` para refletir substituições e remoções. DELETE é idempotente: retorna 204 mesmo se o usuário já não tiver foto.
+
+Envie um arquivo no campo multipart `foto`. Tipos aceitos: JPG (`image/jpeg`), PNG (`image/png`) e WebP (`image/webp`, inclusive animado). Limite: **5 MiB (5.242.880 bytes)** por arquivo e 6 MiB para o corpo multipart completo. Há também limite de 25 megapixels. O tipo declarado deve corresponder ao conteúdo. JPEG/PNG são decodificados para validação; WebP tem validação estrutural do container RIFF, quadros e cabeçalhos VP8/VP8L conforme a [especificação WebP](https://developers.google.com/speed/webp/docs/riff_container), sem decodificação completa, pois o JDK não inclui esse decoder. Arquivos vazios, tipos incorretos, conteúdo inválido e multipart sem o campo `foto` retornam 400; tamanho excedido retorna 413. Usuário inexistente retorna 404 nas quatro operações. Falhas de armazenamento retornam 500 no formato de erro da API.
+
+Exemplos (`curl.exe` no PowerShell):
+
+```powershell
+Invoke-RestMethod 'http://localhost:8080/api/usuarios/1' -Method Patch -ContentType 'application/json' -Body '{"nome":"Arthur"}'
+curl.exe -F 'foto=@C:/Fotos/perfil.png;type=image/png' http://localhost:8080/api/usuarios/1/foto
+curl.exe http://localhost:8080/api/usuarios/1/foto -o perfil-recebido.png
+Invoke-RestMethod 'http://localhost:8080/api/usuarios/1/foto' -Method Delete
+```
+
+Configure o diretório com `FOTOS_DIRETORIO` (propriedade `ourmovies.fotos-diretorio`):
+
+```powershell
+$env:FOTOS_DIRETORIO = 'C:/Dados/OurMovies/fotos'
+```
+
+O padrão é `./data/fotos`, relativo ao diretório de execução, fora de `src` e ignorado pelo Git. O diretório é criado no primeiro upload e precisa de permissão de leitura/escrita para a aplicação. Use armazenamento persistente e faça backup desse diretório junto com o banco. O banco contém somente o nome gerado (UUID e extensão validada), nunca bytes, Base64 ou caminhos fornecidos pelo cliente. O nome original do upload é ignorado, inclusive quando contém caminhos.
+
+As alterações do mesmo usuário usam bloqueio no banco. Substituição/remoção apagam a foto anterior após o commit; rollback remove a nova foto. Banco e filesystem não constituem uma transação atômica: uma interrupção abrupta ou falha de exclusão pode deixar arquivos órfãos; falhas de exclusão são registradas em log.
+
+Os testes adicionais verificam nomes, IDs e avaliações preservados, migração idempotente do esquema anterior, upload/consulta/substituição/remoção, limpeza após commit e rollback, imagem padrão, tipos inválidos, MIME divergente, arquivos vazios/truncados, limite de tamanho e nomes de arquivo maliciosos. Usam um diretório temporário, sem escrever fotos reais.
 
 ## Exemplo completo no PowerShell
 
