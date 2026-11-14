@@ -13,4 +13,6 @@ public class Usuario {
     private Long id;
     @Column(nullable = false, length = 100)
     private String nome;
+    @Column(name = "foto_perfil", length = 100)
+    private String fotoPerfil;
 }
