@@ -1,157 +1,280 @@
-# OurMovies — backend
 
-Java 21, Spring Boot 4.1.2, Gradle e PostgreSQL. Lista compartilhada para dois usuários, sem autenticação. Os dados dos filmes são obtidos da TMDB, sem cadastro manual.
+# OurMovies — Backend
 
-## Executar
+API REST desenvolvida em **Java 21 e Spring Boot**, responsável pelo gerenciamento de uma coleção de filmes compartilhada por um casal, permitindo organizar filmes assistidos, criar listas de desejos, registrar avaliações individuais e calcular a média das notas.
 
-Instale um JDK 21 e PostgreSQL. O Gradle Wrapper já está no projeto.
-No PostgreSQL, conectado como administrador, crie o usuário e o banco:
+O projeto utiliza uma **arquitetura em camadas**, com persistência em PostgreSQL e integração com a API externa **TMDB (The Movie Database)** por meio do Spring RestClient, possibilitando consultar automaticamente informações dos filmes.
 
-```sql
-CREATE USER ourmovies WITH PASSWORD 'troque-esta-senha';
-CREATE DATABASE ourmovies OWNER ourmovies;
+---
+
+## Arquitetura do Sistema
+
+O backend é responsável por processar as requisições do frontend React, aplicar as regras de negócio e realizar a comunicação com o PostgreSQL e a API TMDB.
+
+```mermaid
+flowchart TD
+    CLIENT["Frontend — React"]
+    API["Backend — Spring Boot"]
+    CONTROLLER["Controller"]
+    SERVICE["Service"]
+    REPOSITORY["Repository"]
+    CLIENTTMDB["TmdbClient"]
+    DB[("PostgreSQL")]
+    TMDB["API TMDB"]
+
+    CLIENT -->|HTTP / REST| API
+    API --> CONTROLLER
+    CONTROLLER --> SERVICE
+    SERVICE --> REPOSITORY
+    SERVICE --> CLIENTTMDB
+    REPOSITORY --> DB
+    CLIENTTMDB -->|RestClient / HTTP| TMDB
 ```
 
-No PowerShell, na raiz do projeto:
+### Organização do Backend
+
+O projeto segue uma arquitetura em camadas, com responsabilidades separadas.
+
+| Camada | Responsabilidade |
+|---|---|
+| Controller | Recebimento e processamento de requisições HTTP |
+| Service | Implementação das regras de negócio |
+| Repository | Persistência e consulta de dados utilizando JPA |
+| Entity | Representação das entidades do banco de dados |
+| DTO | Transferência e validação de dados da API |
+| Client | Comunicação com serviços externos |
+| Config | Configurações e inicialização da aplicação |
+| Exception | Tratamento centralizado de exceções |
+
+---
+
+## Funcionalidades
+
+- **Pesquisa de filmes:** integração com a API TMDB para consultar filmes pelo título.
+- **Informações automáticas:** obtenção de sinopse, pôster, gêneros e data de lançamento.
+- **Coleção compartilhada:** gerenciamento de filmes assistidos e filmes para assistir.
+- **Favoritos:** possibilidade de marcar e desmarcar filmes favoritos.
+- **Avaliações individuais:** registro de notas e comentários dos dois usuários.
+- **Média do casal:** cálculo automático da média das avaliações.
+- **Gerenciamento de avaliações:** criação, consulta, atualização e exclusão.
+- **Personalização de usuários:** edição de nomes e gerenciamento de fotos de perfil.
+- **Validação de dados:** prevenção de registros inválidos e duplicados.
+- **Tratamento de exceções:** respostas HTTP padronizadas.
+- **Persistência:** armazenamento das informações no PostgreSQL.
+
+---
+
+## Tecnologias Utilizadas
+
+| Tecnologia | Aplicação |
+|---|---|
+| Java 21 | Linguagem de programação |
+| Spring Boot 4 | Desenvolvimento da API REST |
+| Spring Web MVC | Requisições e endpoints HTTP |
+| Spring Data JPA | Persistência e acesso ao banco |
+| Hibernate | Mapeamento objeto-relacional |
+| PostgreSQL | Banco de dados relacional |
+| Spring RestClient | Integração com a API TMDB |
+| Bean Validation | Validação de dados |
+| Lombok | Redução de código repetitivo |
+| Gradle | Gerenciamento de dependências |
+| JUnit | Testes automatizados |
+| H2 | Banco de dados utilizado nos testes |
+
+---
+
+## Integração com a API TMDB
+
+O OurMovies utiliza o **TMDB (The Movie Database)** para pesquisar filmes e recuperar automaticamente suas informações.
+
+### Fluxo de Funcionamento
+
+1. O frontend envia uma pesquisa ao backend.
+2. O Controller recebe a requisição HTTP.
+3. O Service processa a solicitação.
+4. O TmdbClient realiza a comunicação com a API TMDB.
+5. O TMDB retorna as informações dos filmes.
+6. O backend transforma os dados em DTOs e retorna o resultado ao frontend.
+7. Quando um filme é adicionado à coleção, suas informações são persistidas no PostgreSQL.
+
+A integração utiliza o **Spring RestClient**, permitindo comunicação HTTP com a API externa.
+
+A chave de acesso ao TMDB é armazenada em uma variável de ambiente, sem ser exposta ao frontend.
+
+---
+
+## Banco de Dados
+
+O projeto utiliza **PostgreSQL** para armazenar usuários, filmes, listas e avaliações.
+
+### Entidades
+
+| Entidade | Responsabilidade |
+|---|---|
+| Usuario | Armazena os perfis dos dois usuários |
+| Filme | Armazena as informações dos filmes |
+| FilmeLista | Controla status, favoritos e datas |
+| Avaliacao | Registra notas e comentários |
+| StatusFilme | Define os estados ASSISTIDO e QUERO_ASSISTIR |
+
+### Relacionamentos
+
+- Um usuário pode realizar várias avaliações.
+- Um filme pode receber avaliações dos dois usuários.
+- Cada filme pode aparecer apenas uma vez na coleção compartilhada.
+- Cada usuário pode avaliar um mesmo filme apenas uma vez.
+- Os gêneros são armazenados em uma tabela auxiliar relacionada aos filmes.
+
+O mapeamento das entidades é realizado utilizando **JPA e Hibernate**.
+
+---
+
+## Endpoints da API
+
+A aplicação disponibiliza endpoints REST para gerenciar filmes, listas, avaliações e usuários.
+
+### Filmes
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/api/filmes/pesquisar` | Pesquisa filmes no TMDB |
+| GET | `/api/filmes/{tmdbId}/detalhes` | Consulta detalhes de um filme |
+
+### Coleção
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/api/lista` | Consulta a coleção |
+| POST | `/api/lista/{tmdbId}` | Adiciona um filme |
+| PATCH | `/api/lista/{id}` | Atualiza informações da lista |
+| DELETE | `/api/lista/{id}` | Remove um filme da coleção |
+
+### Avaliações
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| POST | `/api/avaliacoes` | Registra uma avaliação |
+| GET | `/api/avaliacoes/filme/{filmeId}` | Consulta avaliações de um filme |
+| PUT | `/api/avaliacoes/{id}` | Atualiza uma avaliação |
+| DELETE | `/api/avaliacoes/{id}` | Exclui uma avaliação |
+
+### Usuários
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/api/usuarios` | Consulta os usuários |
+| PATCH | `/api/usuarios/{id}` | Atualiza o nome |
+| POST | `/api/usuarios/{id}/foto` | Envia ou substitui a foto |
+| GET | `/api/usuarios/{id}/foto` | Consulta a foto |
+| DELETE | `/api/usuarios/{id}/foto` | Remove a foto |
+
+---
+
+## Como Executar
+
+### Pré-requisitos
+
+- Java 21
+- PostgreSQL
+- Git
+- Gradle Wrapper
+- Chave de API TMDB
+
+### 1. Clone o repositório
+
+```bash
+git clone https://github.com/arthurcoelho04/OurFilms.git
+```
+
+### 2. Configure o PostgreSQL
+
+Crie um banco de dados chamado:
+
+```text
+ourmovies
+```
+
+O projeto utiliza scripts SQL de inicialização e validação do esquema pelo Hibernate.
+
+### 3. Configure as variáveis de ambiente
+
+No PowerShell, dentro da pasta do projeto:
 
 ```powershell
 $env:DB_URL = 'jdbc:postgresql://localhost:5432/ourmovies'
-$env:DB_USERNAME = 'ourmovies'
-$env:DB_PASSWORD = 'troque-esta-senha'
-$env:TMDB_API_KEY = 'sua-chave-api-v3'
-$env:USUARIO_1_NOME = 'Arthur'
-$env:USUARIO_2_NOME = 'Nome dela'
+$env:DB_USERNAME = 'postgres'
+$env:DB_PASSWORD = 'SUA_SENHA'
+$env:TMDB_API_KEY = 'SUA_CHAVE_TMDB'
+```
+
+Substitua os valores pelas suas credenciais locais.
+
+A chave do TMDB pode ser obtida em:
+
+https://www.themoviedb.org/settings/api
+
+As credenciais não devem ser adicionadas diretamente ao código-fonte ou enviadas ao GitHub.
+
+### 4. Inicie a aplicação
+
+No Windows:
+
+```powershell
 .\gradlew.bat bootRun
 ```
 
-Obtenha a **API Key v3** nas configurações API da sua conta TMDB: <https://www.themoviedb.org/settings/api>.
-Use a chave, não o token Bearer. Ela é enviada exclusivamente pelo backend. A integração consulta `/search/movie`, `/movie/{id}` e `/genre/movie/list`, em `pt-BR`.
-Referências: [autenticação TMDB](https://developer.themoviedb.org/docs/authentication-application), [pesquisa e detalhes](https://developer.themoviedb.org/docs/search-and-query-for-details), [RestClient do Spring](https://docs.spring.io/spring-framework/reference/integration/rest-clients.html).
+No Linux ou macOS:
 
-O backend fica em `http://localhost:8080`. CORS permite `http://localhost:5173`.
-Variáveis são lidas do ambiente do processo; um arquivo `.env` não é carregado automaticamente. Não salve credenciais no repositório.
-Sem `TMDB_API_KEY`, o banco e os endpoints locais continuam disponíveis, mas consultas externas retornam 502.
-
-`schema.sql` cria as tabelas, índices e restrições se ainda não existirem; o Hibernate valida o esquema (`ddl-auto=validate`). O script adiciona `usuarios.foto_perfil` com `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, inclusive em bancos existentes, sem apagar dados ou alterar IDs e avaliações. Para futuras alterações de esquema, adote migrações versionadas; `CREATE TABLE IF NOT EXISTS` não atualiza tabelas existentes.
-Na primeira inicialização, são criados os usuários de IDs 1 e 2. Os nomes vêm das variáveis acima (padrões: `Usuario 1` e `Usuario 2`). Reiniciar preserva nomes existentes; essas variáveis não renomeiam usuários já cadastrados.
-
-## Estrutura
-
-- `entity`: `Usuario`, `Filme`, `FilmeLista`, `Avaliacao` e `StatusFilme`.
-- `repository`: quatro repositórios JPA; restrições de unicidade no banco e bloqueios nas alterações da lista/avaliações.
-- `service`: `FilmeService`, `ListaService`, `AvaliacaoService`, `UsuarioService`.
-- `controller`: quatro controllers REST com DTOs e validação.
-- `client/TmdbClient`: consultas com RestClient, paginação, gêneros, timeouts e tradução de erros externos.
-- `config`: RestClient, CORS e inicialização dos dois usuários.
-- `dto`: entradas e saídas; entidades JPA não são expostas diretamente.
-- `exception`: `ApiException` e `GlobalExceptionHandler`, com resposta `{status, mensagem, detalhes}`.
-
-## Contrato e regras
-
-| Método | Rota | Resultado |
-| --- | --- | --- |
-| GET | `/api/filmes/pesquisar?nome=Clube&pagina=1` | Pesquisa paginada TMDB com gêneros |
-| GET | `/api/filmes/{tmdbId}/detalhes` | Detalhes TMDB |
-| GET | `/api/lista` | Lista, média e total de avaliações por filme |
-| POST | `/api/lista/{tmdbId}` | Importa filme e adiciona à lista (201) |
-| PATCH | `/api/lista/{id}` | Altera status, favorito e/ou data |
-| DELETE | `/api/lista/{id}` | Remove item e suas avaliações (204) |
-| POST | `/api/avaliacoes` | Cria avaliação individual (201) |
-| GET | `/api/avaliacoes/filme/{filmeId}` | Avaliações, média e total |
-| PUT | `/api/avaliacoes/{id}` | Substitui nota e comentário |
-| DELETE | `/api/avaliacoes/{id}` | Remove avaliação (204) |
-| GET | `/api/usuarios` | Dois usuários disponíveis |
-| PATCH | `/api/usuarios/{id}` | Atualiza o nome (200) |
-| POST | `/api/usuarios/{id}/foto` | Envia ou substitui foto via multipart (200) |
-| GET | `/api/usuarios/{id}/foto` | Bytes da foto ou imagem padrão (200) |
-| DELETE | `/api/usuarios/{id}/foto` | Remove foto (204) |
-
-`tmdbId` é o identificador externo. `filmeId` é o `filme.id` retornado na lista; `id` nas rotas da lista é o identificador do item da lista. Os três não são intercambiáveis. Nos resultados TMDB, o `id` local é `null`.
-
-POST da lista aceita corpo opcional: sem corpo, cria `QUERO_ASSISTIR`, favorito `false` e data `null`. Exemplo com corpo:
-
-```json
-{"status":"ASSISTIDO","favorito":true,"dataAssistido":"2026-11-12"}
+```bash
+./gradlew bootRun
 ```
 
-No PATCH, campos omitidos ou `null` preservam os valores atuais. `favorito:false` desmarca o favorito. Ao marcar como assistido sem informar data, usa a data atual do servidor. Datas futuras são inválidas. Voltar para `QUERO_ASSISTIR` limpa a data; se houver avaliações, retorna 409 até que sejam removidas. Informar data com `QUERO_ASSISTIR` retorna 400.
+### 5. Acesse a API
 
-Notas aceitam de 0 a 10, com até uma casa decimal. Comentários são opcionais, com até 2000 caracteres. Cada usuário avalia cada filme apenas uma vez; o PUT altera somente nota e comentário. A média é calculada sobre as avaliações existentes, sem arredondamento artificial; sem notas, retorna `null` e total 0. Filmes só podem ser avaliados quando constam como assistidos na lista.
+Após iniciar o Spring Boot, a aplicação estará disponível em:
 
-Excluir da lista remove as avaliações, mas mantém o catálogo local do filme. Adicioná-lo novamente reutiliza os dados locais e começa sem notas. Filmes e avaliações duplicados retornam 409. Recursos ausentes retornam 404; dados inválidos, 400. Falhas de rede, autenticação, limite de requisições ou respostas inválidas da TMDB retornam 502; filme inexistente na TMDB retorna 404. Timeouts: conexão 5s, leitura 10s.
-
-Sem autenticação, as rotas não verificam a identidade de quem altera avaliações. Isso deverá ser tratado quando a autenticação for implementada.
-
-## Personalização de usuários
-
-O PATCH de usuário recebe `{"nome":"Arthur"}`. O nome é obrigatório, não pode ser nulo ou conter apenas espaços e tem no máximo 100 caracteres antes de remover espaços das extremidades. Campos omitidos ou nulos neste endpoint retornam 400.
-
-PATCH de usuário e POST de foto retornam o mesmo DTO da listagem:
-
-```json
-{"id":1,"nome":"Arthur","fotoUrl":"/api/usuarios/1/foto"}
+```text
+http://localhost:8080
 ```
 
-O DTO de usuário nas avaliações também inclui `fotoUrl`. O endereço é relativo à origem do backend e permanece disponível quando não há foto. GET de foto retorna bytes com `Content-Type` correspondente (`image/jpeg`, `image/png` ou `image/webp`); sem foto ou se o arquivo estiver ausente, retorna a imagem padrão SVG incluída na aplicação (`image/svg+xml`). A resposta usa `Cache-Control: no-store` para refletir substituições e remoções. DELETE é idempotente: retorna 204 mesmo se o usuário já não tiver foto.
+A API poderá ser utilizada pelo frontend React, executado normalmente em:
 
-Envie um arquivo no campo multipart `foto`. Tipos aceitos: JPG (`image/jpeg`), PNG (`image/png`) e WebP (`image/webp`, inclusive animado). Limite: **5 MiB (5.242.880 bytes)** por arquivo e 6 MiB para o corpo multipart completo. Há também limite de 25 megapixels. O tipo declarado deve corresponder ao conteúdo. JPEG/PNG são decodificados para validação; WebP tem validação estrutural do container RIFF, quadros e cabeçalhos VP8/VP8L conforme a [especificação WebP](https://developers.google.com/speed/webp/docs/riff_container), sem decodificação completa, pois o JDK não inclui esse decoder. Arquivos vazios, tipos incorretos, conteúdo inválido e multipart sem o campo `foto` retornam 400; tamanho excedido retorna 413. Usuário inexistente retorna 404 nas quatro operações. Falhas de armazenamento retornam 500 no formato de erro da API.
+```text
+http://localhost:5173
+```
 
-Exemplos (`curl.exe` no PowerShell):
+---
+
+## Testes Automatizados
+
+O projeto possui testes automatizados utilizando **JUnit e H2**, permitindo verificar as principais regras de negócio e operações da API.
+
+Para executar os testes:
 
 ```powershell
-Invoke-RestMethod 'http://localhost:8080/api/usuarios/1' -Method Patch -ContentType 'application/json' -Body '{"nome":"Arthur"}'
-curl.exe -F 'foto=@C:/Fotos/perfil.png;type=image/png' http://localhost:8080/api/usuarios/1/foto
-curl.exe http://localhost:8080/api/usuarios/1/foto -o perfil-recebido.png
-Invoke-RestMethod 'http://localhost:8080/api/usuarios/1/foto' -Method Delete
+.\gradlew.bat test
 ```
 
-Configure o diretório com `FOTOS_DIRETORIO` (propriedade `ourmovies.fotos-diretorio`):
-
-```powershell
-$env:FOTOS_DIRETORIO = 'C:/Dados/OurMovies/fotos'
-```
-
-O padrão é `./data/fotos`, relativo ao diretório de execução, fora de `src` e ignorado pelo Git. O diretório é criado no primeiro upload e precisa de permissão de leitura/escrita para a aplicação. Use armazenamento persistente e faça backup desse diretório junto com o banco. O banco contém somente o nome gerado (UUID e extensão validada), nunca bytes, Base64 ou caminhos fornecidos pelo cliente. O nome original do upload é ignorado, inclusive quando contém caminhos.
-
-As alterações do mesmo usuário usam bloqueio no banco. Substituição/remoção apagam a foto anterior após o commit; rollback remove a nova foto. Banco e filesystem não constituem uma transação atômica: uma interrupção abrupta ou falha de exclusão pode deixar arquivos órfãos; falhas de exclusão são registradas em log.
-
-Os testes adicionais verificam nomes, IDs e avaliações preservados, migração idempotente do esquema anterior, upload/consulta/substituição/remoção, limpeza após commit e rollback, imagem padrão, tipos inválidos, MIME divergente, arquivos vazios/truncados, limite de tamanho e nomes de arquivo maliciosos. Usam um diretório temporário, sem escrever fotos reais.
-
-## Exemplo completo no PowerShell
-
-Com a aplicação em execução:
-
-```powershell
-$base = 'http://localhost:8080/api'
-Invoke-RestMethod "$base/usuarios"
-Invoke-RestMethod "$base/filmes/pesquisar?nome=Clube%20da%20Luta"
-Invoke-RestMethod "$base/filmes/550/detalhes"
-
-# Importa da TMDB e marca como assistido.
-$item = Invoke-RestMethod "$base/lista/550" -Method Post -ContentType 'application/json' -Body '{"status":"ASSISTIDO","favorito":true}'
-Invoke-RestMethod "$base/lista"
-
-$body1 = @{ usuarioId = 1; filmeId = $item.filme.id; nota = 8.5; comentario = 'Muito bom' } | ConvertTo-Json
-$nota1 = Invoke-RestMethod "$base/avaliacoes" -Method Post -ContentType 'application/json' -Body $body1
-$body2 = @{ usuarioId = 2; filmeId = $item.filme.id; nota = 9; comentario = 'Adorei' } | ConvertTo-Json
-$nota2 = Invoke-RestMethod "$base/avaliacoes" -Method Post -ContentType 'application/json' -Body $body2
-
-Invoke-RestMethod "$base/avaliacoes/filme/$($item.filme.id)"
-Invoke-RestMethod "$base/avaliacoes/$($nota1.id)" -Method Put -ContentType 'application/json' -Body '{"nota":10,"comentario":"Favorito!"}'
-Invoke-RestMethod "$base/lista/$($item.id)" -Method Patch -ContentType 'application/json' -Body '{"favorito":false}'
-Invoke-RestMethod "$base/avaliacoes/$($nota1.id)" -Method Delete
-Invoke-RestMethod "$base/avaliacoes/$($nota2.id)" -Method Delete
-Invoke-RestMethod "$base/lista/$($item.id)" -Method Patch -ContentType 'application/json' -Body '{"status":"QUERO_ASSISTIR"}'
-Invoke-RestMethod "$base/lista/$($item.id)" -Method Delete
-```
-
-## Compilação e testes
+Para executar os testes e gerar o arquivo JAR:
 
 ```powershell
 .\gradlew.bat clean test bootJar
 ```
 
-O JAR fica em `build/libs/OurMovies-0.0.1-SNAPSHOT.jar`. Execute com `java -jar` e as mesmas variáveis de ambiente.
-Relatório dos testes: `build/reports/tests/test/index.html`.
+Os testes utilizam um banco H2 e simulam a integração externa, sem depender de uma conexão real com o TMDB.
 
-Os testes usam H2 em modo PostgreSQL, o mesmo `schema.sql`, endpoints via MockMvc e TMDB simulada. Cobrem o contexto Spring, duas avaliações e média, atualização, remoção, duplicidade, status, validação, usuários, CORS e mapeamento de respostas/erros externos. Não exigem credenciais nem acesso à TMDB real. H2 é uma dependência exclusiva de testes; o banco de execução é PostgreSQL. A conexão real com PostgreSQL e a credencial TMDB devem ser verificadas no ambiente configurado.
+---
+
+## Projeto Relacionado
+
+Este repositório contém o **backend da aplicação OurMovies**, responsável pelas regras de negócio, persistência e integração com o catálogo de filmes.
+
+O frontend é desenvolvido separadamente em **React e Vite**, consumindo os endpoints REST disponibilizados pelo Spring Boot.
+
+---
+
+## Autor
+
+**Arthur Coelho**
+
+[GitHub](https://github.com/arthurcoelho04)
