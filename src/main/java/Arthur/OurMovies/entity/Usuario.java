@@ -11,8 +11,10 @@ import lombok.*;
 public class Usuario {
     @Id
     private Long id;
+
     @Column(nullable = false, length = 100)
     private String nome;
+
     @Column(name = "foto_perfil", length = 100)
     private String fotoPerfil;
 }

@@ -10,17 +10,25 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @NoArgsConstructor
+
 public class FilmeLista {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+
+    @OneToOne(fetch = FetchType.LAZY, optional = false) //FilmeLista com Filme.
     @JoinColumn(name = "filme_id", nullable = false)
     private Filme filme;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private StatusFilme status;
+
     @Column(nullable = false)
     private boolean favorito;
+
     private LocalDate dataAssistido;
 }
+
+//uniqueConstraints: define uma restrição de unicidade.
+//columnNames = "filme_id": coluna que não pode conter valores repetidos.

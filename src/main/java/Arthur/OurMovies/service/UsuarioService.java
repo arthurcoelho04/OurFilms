@@ -24,7 +24,10 @@ public class UsuarioService {
 
     @Transactional(readOnly = true)
     public List<UsuarioResponse> listar() {
-        return repository.findAll(Sort.by("id")).stream().map(UsuarioResponse::from).toList();
+        return repository.findAll(Sort.by("id"))
+                .stream()
+                .map(UsuarioResponse::from)
+                .toList();
     }
 
     @Transactional
@@ -76,6 +79,7 @@ public class UsuarioService {
     }
 
     private Usuario buscarParaAtualizar(Long id) {
-        return repository.buscarParaAtualizar(id).orElseThrow(() -> ApiException.notFound("Usuario nao encontrado."));
+        return repository.buscarParaAtualizar(id).orElseThrow(
+                () -> ApiException.notFound("Usuario nao encontrado."));
     }
 }
