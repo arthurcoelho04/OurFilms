@@ -28,7 +28,8 @@ public class AvaliacaoController {
     }
 
     @PutMapping("/{id}")
-    public AvaliacaoResponse atualizar(@PathVariable @Positive Long id, @RequestBody @Valid AtualizarAvaliacaoRequest request) {
+    public AvaliacaoResponse atualizar(@PathVariable @Positive Long id,
+                                       @RequestBody @Valid AtualizarAvaliacaoRequest request) {
         return service.atualizar(id, request);
     }
 

@@ -14,6 +14,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/lista")
 @RequiredArgsConstructor
+
 public class ListaController {
     private final ListaService service;
 
