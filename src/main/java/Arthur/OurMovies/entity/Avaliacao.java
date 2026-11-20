@@ -14,14 +14,18 @@ public class Avaliacao {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)    //um usuario varias avalições
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)    //um filme varias avaliações
     @JoinColumn(name = "filme_id", nullable = false)
     private Filme filme;
-    @Column(nullable = false, precision = 3, scale = 1)
+
+    @Column(nullable = false, precision = 3, scale = 1)     //00.0
     private BigDecimal nota;
+
     @Column(length = 2000)
     private String comentario;
 }

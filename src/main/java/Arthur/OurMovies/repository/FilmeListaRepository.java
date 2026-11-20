@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface FilmeListaRepository extends JpaRepository<FilmeLista, Long> {
+
     boolean existsByFilmeTmdbId(Long tmdbId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -18,3 +19,4 @@ public interface FilmeListaRepository extends JpaRepository<FilmeLista, Long> {
     @Query("select l from FilmeLista l where l.filme.id = :filmeId")
     Optional<FilmeLista> buscarPorFilmeParaAtualizar(@Param("filmeId") Long filmeId);
 }
+

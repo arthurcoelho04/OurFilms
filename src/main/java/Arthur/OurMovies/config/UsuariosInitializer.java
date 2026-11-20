@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
+
 public class UsuariosInitializer implements ApplicationRunner {
 
     private final UsuarioRepository repository;
@@ -29,7 +30,8 @@ public class UsuariosInitializer implements ApplicationRunner {
     private void criar(Long id, String nome) {
         if (repository.existsById(id)) return;
         if (nome == null || nome.isBlank() || nome.length() > 100) {
-            throw new IllegalStateException("O nome inicial de cada usuário deve ter entre 1 e 100 caracteres.");
+            throw new IllegalStateException(
+                    "O nome inicial de cada usuário deve ter entre 1 e 100 caracteres.");
         }
         var usuario = new Usuario();
         usuario.setId(id);

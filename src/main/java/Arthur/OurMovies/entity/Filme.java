@@ -16,17 +16,27 @@ public class Filme {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(name = "tmdb_id", nullable = false)
     private Long tmdbId;
+
     @Column(nullable = false)
     private String titulo;
-    @Column(columnDefinition = "text")
+
+    @Column(columnDefinition = "text") //permite armarzenar textos longos
     private String sinopse;
+
     private String posterPath;
+
     private LocalDate dataLancamento;
+
     @ElementCollection
     @CollectionTable(name = "filme_generos", joinColumns = @JoinColumn(name = "filme_id"))
     @Column(name = "genero", nullable = false)
     @OrderColumn(name = "posicao")
     private List<String> generos = new ArrayList<>();
 }
+
+
+//@ElementCollection: representa uma coleção de valores simples.
+//@CollectionTable: define a tabela onde esses valores serão armazenados.
