@@ -1,7 +1,7 @@
 package Arthur.OurMovies.client;
 
-import Arthur.OurMovies.dto.FilmeResponse;
-import Arthur.OurMovies.dto.PesquisaFilmesResponse;
+import Arthur.OurMovies.dto.response.FilmeResponse;
+import Arthur.OurMovies.dto.response.PesquisaFilmesResponse;
 import Arthur.OurMovies.exception.ApiException;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,33 +26,52 @@ public class TmdbClient {
     public record Genero(Long id, String name) {
     }
 
-    public record FilmeTmdb(Long id, String title, String overview, @JsonProperty("poster_path") String posterPath,
-                            @JsonProperty("release_date") String releaseDate, List<Genero> genres,
+    public record FilmeTmdb(Long id,
+                            String title,
+                            String overview,
+                            @JsonProperty("poster_path") String posterPath,
+                            @JsonProperty("release_date") String releaseDate,
+                            List<Genero> genres,
                             @JsonProperty("genre_ids") List<Long> genreIds) {
     }
 
-    public record PesquisaTmdb(Integer page, @JsonProperty("total_pages") Integer totalPages,
-                               @JsonProperty("total_results") Integer totalResults, List<FilmeTmdb> results) {
+    public record PesquisaTmdb(Integer page,
+                               @JsonProperty("total_pages") Integer totalPages,
+                               @JsonProperty("total_results") Integer totalResults,
+                               List<FilmeTmdb> results) {
     }
 
     public record GenerosTmdb(List<Genero> genres) {
     }
 
     public PesquisaFilmesResponse pesquisar(String nome, int pagina) {
+
         return executar(() -> {
-            var pesquisa = client.get().uri(uri -> uri.path("/search/movie")
-                    .queryParam("api_key", apiKey).queryParam("language", "pt-BR")
-                    .queryParam("query", "{nome}").queryParam(
-                            "page", pagina).queryParam("include_adult", false)
-                    .build(nome.trim())).retrieve().body(PesquisaTmdb.class);
+            var pesquisa = client.get()
+                    .uri(uri -> uri.path("/search/movie")
+                            .queryParam("api_key", apiKey)
+                            .queryParam("language", "pt-BR")
+                            .queryParam("query", "{nome}")
+                            .queryParam("page", pagina)
+                            .queryParam("include_adult", false)
+                            .build(nome.trim()))
+                    .retrieve()
+                    .body(PesquisaTmdb.class);
+
             if (pesquisa == null || pesquisa.results() == null || pesquisa.page() == null
                     || pesquisa.totalPages() == null || pesquisa.totalResults() == null) throw ApiException.tmdb();
             if (pesquisa.results().isEmpty())
                 return new PesquisaFilmesResponse(pesquisa.page(),
                         pesquisa.totalPages(), pesquisa.totalResults(), List.of());
-            var generos = client.get().uri(uri -> uri.path("/genre/movie/list")
-                            .queryParam("api_key", apiKey).queryParam("language", "pt-BR").build())
-                    .retrieve().body(GenerosTmdb.class);
+
+            var generos = client.get()
+                    .uri(uri -> uri.path("/genre/movie/list")
+                            .queryParam("api_key", apiKey)
+                            .queryParam("language", "pt-BR")
+                            .build())
+                    .retrieve()
+                    .body(GenerosTmdb.class);
+
             if (generos == null || generos.genres() == null) throw ApiException.tmdb();
             return new PesquisaFilmesResponse(pesquisa.page(), pesquisa.totalPages(), pesquisa.totalResults(),
                     pesquisa.results().stream().map(f -> mapear(f, generos.genres().stream()
@@ -63,10 +82,14 @@ public class TmdbClient {
 
     public FilmeResponse detalhes(Long tmdbId) {
         return executar(() -> {
-            var filme = client.get().uri(uri -> uri.path("/movie/{id}")
-                            .queryParam("api_key", apiKey).queryParam(
-                                    "language", "pt-BR").build(tmdbId))
-                    .retrieve().body(FilmeTmdb.class);
+            var filme = client.get()
+                    .uri(uri -> uri.path("/movie/{id}")
+                            .queryParam("api_key", apiKey)
+                            .queryParam("language", "pt-BR")
+                            .build(tmdbId))
+                    .retrieve()
+                    .body(FilmeTmdb.class);
+
             if (filme == null || filme.genres() == null) throw ApiException.tmdb();
             return mapear(filme, filme.genres().stream().map(Genero::name).toList());
         }, true);

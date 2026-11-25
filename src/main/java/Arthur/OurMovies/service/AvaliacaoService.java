@@ -1,6 +1,9 @@
 package Arthur.OurMovies.service;
 
-import Arthur.OurMovies.dto.*;
+import Arthur.OurMovies.dto.request.AtualizarAvaliacaoRequest;
+import Arthur.OurMovies.dto.request.AvaliacaoRequest;
+import Arthur.OurMovies.dto.response.AvaliacaoResponse;
+import Arthur.OurMovies.dto.response.AvaliacoesFilmeResponse;
 import Arthur.OurMovies.entity.*;
 import Arthur.OurMovies.exception.ApiException;
 import Arthur.OurMovies.repository.*;

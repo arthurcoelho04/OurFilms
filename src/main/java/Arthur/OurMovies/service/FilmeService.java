@@ -1,8 +1,8 @@
 package Arthur.OurMovies.service;
 
 import Arthur.OurMovies.client.TmdbClient;
-import Arthur.OurMovies.dto.FilmeResponse;
-import Arthur.OurMovies.dto.PesquisaFilmesResponse;
+import Arthur.OurMovies.dto.response.FilmeResponse;
+import Arthur.OurMovies.dto.response.PesquisaFilmesResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

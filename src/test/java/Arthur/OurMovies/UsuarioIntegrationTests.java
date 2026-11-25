@@ -12,11 +12,13 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
+
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -25,21 +27,32 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class UsuarioIntegrationTests {
     static final Path FOTOS = temporario();
+
     @DynamicPropertySource
     static void configurar(DynamicPropertyRegistry registry) {
         registry.add("ourmovies.fotos-diretorio", () -> FOTOS.toString());
     }
+
     private static Path temporario() {
-        try { return Files.createTempDirectory("ourmovies-fotos-"); }
-        catch (IOException ex) { throw new UncheckedIOException(ex); }
+        try {
+            return Files.createTempDirectory("ourmovies-fotos-");
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
     }
-    @Autowired MockMvc mvc;
-    @Autowired UsuarioRepository usuarios;
-    @Autowired TransactionTemplate transacao;
+
+    @Autowired
+    MockMvc mvc;
+    @Autowired
+    UsuarioRepository usuarios;
+    @Autowired
+    TransactionTemplate transacao;
     private String nomeOriginal;
 
     @BeforeEach
-    void preparar() { nomeOriginal = usuarios.findById(1L).orElseThrow().getNome(); }
+    void preparar() {
+        nomeOriginal = usuarios.findById(1L).orElseThrow().getNome();
+    }
 
     @AfterEach
     void limpar() throws IOException {
@@ -52,18 +65,25 @@ class UsuarioIntegrationTests {
             for (var arquivo : arquivos.toList()) Files.delete(arquivo);
         }
     }
+
     @AfterAll
-    static void limparDiretorio() throws IOException { Files.delete(FOTOS); }
+    static void limparDiretorio() throws IOException {
+        Files.delete(FOTOS);
+    }
 
     private byte[] imagem(String formato) throws IOException {
         var output = new ByteArrayOutputStream();
         assertTrue(ImageIO.write(new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB), formato, output));
         return output.toByteArray();
     }
+
     private MockMultipartFile foto(String nome, String tipo, byte[] bytes) {
         return new MockMultipartFile("foto", nome, tipo, bytes);
     }
-    private String referencia() { return usuarios.findById(1L).orElseThrow().getFotoPerfil(); }
+
+    private String referencia() {
+        return usuarios.findById(1L).orElseThrow().getFotoPerfil();
+    }
 
     @Test
     void alteraNomePreservandoIdsEOutroUsuario() throws Exception {
@@ -131,7 +151,9 @@ class UsuarioIntegrationTests {
                 .andExpect(status().isPayloadTooLarge());
         assertEquals(anterior, referencia());
         assertTrue(Files.exists(FOTOS.resolve(anterior)));
-        try (var arquivos = Files.list(FOTOS)) { assertEquals(1, arquivos.count()); }
+        try (var arquivos = Files.list(FOTOS)) {
+            assertEquals(1, arquivos.count());
+        }
         mvc.perform(multipart("/api/usuarios/1/foto")).andExpect(status().isBadRequest());
     }
 
@@ -157,8 +179,11 @@ class UsuarioIntegrationTests {
         mvc.perform(multipart("/api/usuarios/1/foto").file(foto("x.png", "image/png", imagem("png")))).andExpect(status().isOk());
         String anterior = referencia();
         transacao.executeWithoutResult(status -> {
-            try { mvc.perform(delete("/api/usuarios/1/foto")).andExpect(status().isNoContent()); }
-            catch (Exception ex) { throw new RuntimeException(ex); }
+            try {
+                mvc.perform(delete("/api/usuarios/1/foto")).andExpect(status().isNoContent());
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
             status.setRollbackOnly();
         });
         assertEquals(anterior, referencia());
@@ -182,11 +207,15 @@ class UsuarioIntegrationTests {
         transacao.executeWithoutResult(status -> {
             try {
                 mvc.perform(multipart("/api/usuarios/1/foto").file(foto("x.jpg", "image/jpeg", imagem("jpg")))).andExpect(status().isOk());
-            } catch (Exception ex) { throw new RuntimeException(ex); }
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
             status.setRollbackOnly();
         });
         assertEquals(anterior, referencia());
         assertTrue(Files.exists(FOTOS.resolve(anterior)));
-        try (var arquivos = Files.list(FOTOS)) { assertEquals(1, arquivos.count()); }
+        try (var arquivos = Files.list(FOTOS)) {
+            assertEquals(1, arquivos.count());
+        }
     }
 }

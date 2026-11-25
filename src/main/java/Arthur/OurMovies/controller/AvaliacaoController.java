@@ -1,6 +1,9 @@
 package Arthur.OurMovies.controller;
 
-import Arthur.OurMovies.dto.*;
+import Arthur.OurMovies.dto.request.AtualizarAvaliacaoRequest;
+import Arthur.OurMovies.dto.request.AvaliacaoRequest;
+import Arthur.OurMovies.dto.response.AvaliacaoResponse;
+import Arthur.OurMovies.dto.response.AvaliacoesFilmeResponse;
 import Arthur.OurMovies.service.AvaliacaoService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;

@@ -1,6 +1,7 @@
 package Arthur.OurMovies.controller;
 
-import Arthur.OurMovies.dto.*;
+import Arthur.OurMovies.dto.request.ListaRequest;
+import Arthur.OurMovies.dto.response.ListaResponse;
 import Arthur.OurMovies.service.ListaService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;

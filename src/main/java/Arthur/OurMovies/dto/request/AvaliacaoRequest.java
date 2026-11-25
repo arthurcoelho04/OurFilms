@@ -1,4 +1,4 @@
-package Arthur.OurMovies.dto;
+package Arthur.OurMovies.dto.request;
 
 import jakarta.validation.constraints.*;
 
