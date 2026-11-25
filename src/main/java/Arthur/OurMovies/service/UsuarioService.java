@@ -1,7 +1,7 @@
 package Arthur.OurMovies.service;
 
-import Arthur.OurMovies.dto.AtualizarUsuarioRequest;
-import Arthur.OurMovies.dto.UsuarioResponse;
+import Arthur.OurMovies.dto.request.AtualizarUsuarioRequest;
+import Arthur.OurMovies.dto.response.UsuarioResponse;
 import Arthur.OurMovies.entity.Usuario;
 import Arthur.OurMovies.exception.ApiException;
 import Arthur.OurMovies.repository.UsuarioRepository;

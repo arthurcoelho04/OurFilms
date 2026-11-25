@@ -1,7 +1,8 @@
 package Arthur.OurMovies.service;
 
 import Arthur.OurMovies.client.TmdbClient;
-import Arthur.OurMovies.dto.*;
+import Arthur.OurMovies.dto.request.ListaRequest;
+import Arthur.OurMovies.dto.response.ListaResponse;
 import Arthur.OurMovies.entity.*;
 import Arthur.OurMovies.exception.ApiException;
 import Arthur.OurMovies.repository.*;

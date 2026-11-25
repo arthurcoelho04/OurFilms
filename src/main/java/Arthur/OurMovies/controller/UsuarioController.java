@@ -1,7 +1,7 @@
 package Arthur.OurMovies.controller;
 
-import Arthur.OurMovies.dto.AtualizarUsuarioRequest;
-import Arthur.OurMovies.dto.UsuarioResponse;
+import Arthur.OurMovies.dto.request.AtualizarUsuarioRequest;
+import Arthur.OurMovies.dto.response.UsuarioResponse;
 import Arthur.OurMovies.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

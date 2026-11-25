@@ -4,7 +4,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
+
 import java.sql.*;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class UsuarioSchemaTests {

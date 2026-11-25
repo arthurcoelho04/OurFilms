@@ -1,7 +1,7 @@
 package Arthur.OurMovies.controller;
 
-import Arthur.OurMovies.dto.FilmeResponse;
-import Arthur.OurMovies.dto.PesquisaFilmesResponse;
+import Arthur.OurMovies.dto.response.FilmeResponse;
+import Arthur.OurMovies.dto.response.PesquisaFilmesResponse;
 import Arthur.OurMovies.service.FilmeService;
 import jakarta.validation.constraints.*;
 import lombok.RequiredArgsConstructor;

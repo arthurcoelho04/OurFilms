@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
@@ -14,13 +15,21 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 class TmdbClientTests {
     MockRestServiceServer server;
     TmdbClient client;
-    @BeforeEach void setup() {
+
+    @BeforeEach
+    void setup() {
         var builder = RestClient.builder().baseUrl("https://api.themoviedb.org/3");
         server = MockRestServiceServer.bindTo(builder).build();
         client = new TmdbClient(builder.build(), "test-key");
     }
-    @AfterEach void verify() { server.verify(); }
-    @Test void detalhesMapeiaDadosEDataVazia() {
+
+    @AfterEach
+    void verify() {
+        server.verify();
+    }
+
+    @Test
+    void detalhesMapeiaDadosEDataVazia() {
         server.expect(requestTo("https://api.themoviedb.org/3/movie/550?api_key=test-key&language=pt-BR"))
                 .andRespond(withSuccess("""
                         {"id":550,"title":"Filme","overview":"Sinopse","poster_path":null,
@@ -31,7 +40,9 @@ class TmdbClientTests {
         assertThat(filme.generos()).containsExactly("Drama");
         assertThat(filme.dataLancamento()).isNull();
     }
-    @Test void pesquisaTraduzGenerosEPreservaPaginacao() {
+
+    @Test
+    void pesquisaTraduzGenerosEPreservaPaginacao() {
         server.expect(queryParam("query", "Clube%20da%20Luta"))
                 .andExpect(queryParam("page", "2"))
                 .andRespond(withSuccess("""
@@ -44,34 +55,46 @@ class TmdbClientTests {
         assertThat(pesquisa.totalResultados()).isEqualTo(42);
         assertThat(pesquisa.resultados().getFirst().generos()).containsExactly("Drama");
     }
-    @Test void filmeAusenteRetorna404() {
+
+    @Test
+    void filmeAusenteRetorna404() {
         server.expect(anything()).andRespond(withResourceNotFound());
         assertThatThrownBy(() -> client.detalhes(1L)).isInstanceOfSatisfying(ApiException.class,
                 ex -> assertThat(ex.getStatus()).isEqualTo(HttpStatus.NOT_FOUND));
     }
-    @Test void errosExternosRetornam502SemExporCredenciais() {
+
+    @Test
+    void errosExternosRetornam502SemExporCredenciais() {
         server.expect(anything()).andRespond(withStatus(HttpStatus.UNAUTHORIZED).body("segredo"));
         assertThatThrownBy(() -> client.detalhes(1L)).isInstanceOfSatisfying(ApiException.class, ex -> {
             assertThat(ex.getStatus()).isEqualTo(HttpStatus.BAD_GATEWAY);
             assertThat(ex.getMessage()).doesNotContain("segredo", "test-key");
         });
     }
-    @Test void respostaInvalidaRetorna502() {
+
+    @Test
+    void respostaInvalidaRetorna502() {
         server.expect(anything()).andRespond(withSuccess("{\"id\":1}", MediaType.APPLICATION_JSON));
         assertThatThrownBy(() -> client.detalhes(1L)).isInstanceOfSatisfying(ApiException.class,
                 ex -> assertThat(ex.getStatus()).isEqualTo(HttpStatus.BAD_GATEWAY));
     }
-    @Test void chaveAusenteNaoChamaApi() {
+
+    @Test
+    void chaveAusenteNaoChamaApi() {
         client = new TmdbClient(RestClient.create(), "");
         assertThatThrownBy(() -> client.detalhes(1L)).isInstanceOfSatisfying(ApiException.class,
                 ex -> assertThat(ex.getStatus()).isEqualTo(HttpStatus.BAD_GATEWAY));
     }
-    @Test void falhaDeRedeRetorna502() {
+
+    @Test
+    void falhaDeRedeRetorna502() {
         server.expect(anything()).andRespond(withException(new java.net.SocketTimeoutException("timeout")));
         assertThatThrownBy(() -> client.detalhes(1L)).isInstanceOfSatisfying(ApiException.class,
                 ex -> assertThat(ex.getStatus()).isEqualTo(HttpStatus.BAD_GATEWAY));
     }
-    @Test void pesquisaVaziaNaoConsultaGenerosEProtegeParametros() {
+
+    @Test
+    void pesquisaVaziaNaoConsultaGenerosEProtegeParametros() {
         server.expect(queryParam("query", "A%26page%3D500"))
                 .andExpect(queryParam("page", "1"))
                 .andRespond(withSuccess("{\"page\":1,\"total_pages\":0,\"total_results\":0,\"results\":[]}", MediaType.APPLICATION_JSON));
